@@ -85,7 +85,8 @@ def fmt_pace(seconds, distance_m):
 
 def fmt_date(date_str):
     dt = datetime.strptime(date_str[:10], '%Y-%m-%d')
-    meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+    meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+             'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     return f"{dt.day} {meses[dt.month-1]} {dt.year}"
 
 
@@ -100,6 +101,18 @@ def index():
 
     rides = []
     for a in raw_rides:
+        # Local time for hour analysis
+        local_str = a.get('start_date_local') or a.get('start_date', '')
+        try:
+            local_dt = datetime.strptime(local_str[:19], '%Y-%m-%dT%H:%M:%S')
+            start_time = local_dt.strftime('%H:%M')
+            hour = local_dt.hour
+            local_date = local_dt.strftime('%Y-%m-%dT%H:%M:%S')
+        except Exception:
+            start_time = ''
+            hour = 12
+            local_date = a.get('start_date', '')
+
         ride = {
             'id': a['id'],
             'name': a['name'],
@@ -109,7 +122,9 @@ def index():
             'moving_time': a['moving_time'],
             'tiempo': fmt_time(a['moving_time']),
             'fecha': fmt_date(a['start_date']),
-            'start_date': a['start_date'],
+            'start_date': local_date,
+            'start_time': start_time,
+            'hour': hour,
             'velocidad': round(a.get('average_speed', 0) * 3.6, 1),
             'max_velocidad': round(a.get('max_speed', 0) * 3.6, 1),
             'desnivel': round(a.get('total_elevation_gain', 0)),
@@ -162,6 +177,8 @@ def index():
             'tiempo': r['tiempo'],
             'fecha': r['fecha'],
             'start_date': r['start_date'],
+            'start_time': r['start_time'],
+            'hour': r['hour'],
             'moving_time': r['moving_time'],
             'velocidad': r['velocidad'],
             'max_velocidad': r['max_velocidad'],
@@ -197,25 +214,45 @@ def get_streams(activity_id):
     if os.path.exists(cache_file):
         with open(cache_file) as f:
             return jsonify(json.load(f))
-
     token = get_valid_token()
     if not token:
         return jsonify({'error': 'not_authenticated'}), 401
-
     r = requests.get(
         f'https://www.strava.com/api/v3/activities/{activity_id}/streams',
         headers={'Authorization': f'Bearer {token}'},
         params={'keys': 'latlng,velocity_smooth,altitude', 'key_by_type': 'true'}
     )
-
     if not r.ok:
         return jsonify({'error': 'strava_error'}), r.status_code
-
     data = r.json()
     with open(cache_file, 'w') as f:
         json.dump(data, f)
-
     return jsonify(data)
+
+
+@app.route('/api/photos/<int:activity_id>')
+def get_photos(activity_id):
+    cache_file = os.path.join(CACHE_DIR, f'photos_{activity_id}.json')
+    if os.path.exists(cache_file):
+        with open(cache_file) as f:
+            return jsonify(json.load(f))
+    token = get_valid_token()
+    if not token:
+        return jsonify([])
+    r = requests.get(
+        f'https://www.strava.com/api/v3/activities/{activity_id}/photos',
+        headers={'Authorization': f'Bearer {token}'},
+        params={'photo_sources': 'true', 'size': 1024}
+    )
+    urls = []
+    if r.ok:
+        for p in r.json():
+            u = (p.get('urls') or {}).get('1024') or (p.get('urls') or {}).get('600')
+            if u:
+                urls.append(u)
+    with open(cache_file, 'w') as f:
+        json.dump(urls, f)
+    return jsonify(urls)
 
 
 @app.route('/connect')
