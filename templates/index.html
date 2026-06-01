@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Rutas de Bici</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg:#0a0a0a; --s1:#131313; --s2:#1a1a1a; --s3:#222;
+      --bd:#252525; --bd2:#2e2e2e;
+      --tx:#efefef; --tx2:#999; --tx3:#555;
+      --ac:#fc4c02; --ac-dim:rgba(252,76,2,.1); --ac-bd:rgba(252,76,2,.22);
+      --blue:#4c6ef5; --cyan:#22b8cf; --green:#51cf66; --yellow:#ffd43b; --red:#ff6b6b;
+      --nav:58px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
+
+    /* NAV */
+    nav{position:fixed;top:0;left:0;right:0;height:var(--nav);background:var(--s1);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 18px;gap:6px;z-index:900;}
+    .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9rem;color:var(--tx);text-decoration:none;flex-shrink:0;margin-right:10px;}
+    .logo svg{width:22px;height:22px;fill:var(--ac);}
+    .ntab{background:none;border:none;color:var(--tx2);padding:7px 13px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:color .15s,background .15s;}
+    .ntab:hover{color:var(--tx);background:var(--s2);}
+    .ntab.on{color:var(--ac);background:var(--ac-dim);}
+    .nav-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+    .ntag{background:var(--ac-dim);color:var(--ac);border:1px solid var(--ac-bd);padding:3px 10px;border-radius:99px;font-size:.7rem;font-weight:700;}
+
+    /* SECTIONS */
+    .sec{position:fixed;top:var(--nav);bottom:0;left:0;right:0;display:none;overflow-y:auto;background:var(--bg);}
+    .sec.on{display:block;}
+    .sec-map.on{display:flex;flex-direction:column;overflow:hidden;}
+    .sec-split.on{display:grid;grid-template-columns:320px 1fr;overflow:hidden;}
+    .inner{max-width:1180px;margin:0 auto;padding:26px 20px;}
+
+    /* CARDS */
+    .card{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;}
+    .card-t{font-size:.65rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;}
+
+    /* STAT CARDS */
+    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+    @media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr);}}
+    .sc{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;border-left:3px solid var(--ac);}
+    .sc-l{font-size:.62rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;}
+    .sc-v{font-size:2rem;font-weight:900;line-height:1;}
+    .sc-u{font-size:.75rem;color:var(--tx2);margin-top:3px;}
+
+    /* BESTS */
+    .g-bests{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0;}
+    .bc{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:15px 17px;cursor:pointer;transition:border-color .15s,transform .12s;}
+    .bc:hover{border-color:var(--ac);transform:translateY(-1px);}
+    .bc-l{font-size:.6rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;}
+    .bc-n{font-size:.83rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:7px;}
+    .bc-v{font-size:1.7rem;font-weight:900;color:var(--ac);}
+    .bc-u{font-size:.72rem;color:var(--tx2);}
+
+    /* SEC LABEL */
+    .slbl{font-size:.62rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;margin-top:22px;}
+    .slbl:first-child{margin-top:0;}
+
+    /* TWO COL */
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    @media(max-width:700px){.g2{grid-template-columns:1fr;}}
+
+    /* YEARLY TABLE */
+    .yt{width:100%;border-collapse:collapse;}
+    .yt th{font-size:.6rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;text-align:left;border-bottom:1px solid var(--bd);}
+    .yt td{padding:10px 8px;border-bottom:1px solid #161616;font-size:.85rem;}
+    .yt tr:last-child td{border-bottom:none;}
+    .yt-y{font-weight:900;color:var(--ac);font-size:.95rem;}
+    .yt-k{font-weight:700;}
+
+    /* ---- MAPA ---- */
+    #mainMap{flex:1;min-height:0;}
+    .mf{position:absolute;z-index:500;background:rgba(13,13,13,.95);border:1px solid var(--bd2);border-radius:12px;padding:13px 15px;backdrop-filter:blur(10px);}
+    .mc{top:calc(var(--nav) + 12px);left:12px;width:230px;}
+    .ml{bottom:30px;left:12px;}
+    .mf-t{font-size:.6rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px;}
+    .mbts{display:flex;gap:5px;margin-bottom:11px;}
+    .mbt{flex:1;padding:7px 6px;background:var(--s2);border:1px solid var(--bd);border-radius:7px;color:var(--tx2);font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;transition:all .15s;}
+    .mbt.on{background:var(--ac-dim);border-color:var(--ac-bd);color:var(--ac);}
+    .msel{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--tx);padding:7px 9px;border-radius:8px;font-size:.78rem;font-family:inherit;outline:none;}
+    .legend-items{display:flex;flex-direction:column;gap:5px;}
+    .li{display:flex;align-items:center;gap:7px;font-size:.73rem;color:var(--tx2);}
+    .ld{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+    #speed-legend{display:none;}
+
+    /* ---- RUTAS SPLIT ---- */
+    .sp-list{border-right:1px solid var(--bd);overflow-y:auto;background:var(--s1);}
+    .sp-search{padding:11px 12px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--s1);z-index:5;}
+    .sp-search input{width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--tx);padding:8px 11px;border-radius:8px;font-size:.8rem;font-family:inherit;outline:none;}
+    .sp-search input:focus{border-color:var(--ac);}
+    .sp-search input::placeholder{color:var(--tx3);}
+    .ai{padding:11px 13px;border-bottom:1px solid #111;cursor:pointer;transition:background .1s;}
+    .ai:hover{background:var(--s2);}
+    .ai.sel{background:var(--ac-dim);border-left:2px solid var(--ac);}
+    .ai-n{font-weight:600;font-size:.85rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ai-m{font-size:.72rem;color:var(--tx2);display:flex;gap:8px;flex-wrap:wrap;}
+    .ai-km{color:var(--ac);font-weight:700;}
+    .tag{display:inline-block;padding:1px 7px;border-radius:99px;font-size:.62rem;font-weight:700;}
+    .tag-r{background:var(--ac-dim);color:var(--ac);}
+    .tag-v{background:rgba(76,110,245,.1);color:var(--blue);}
+    .tag-e{background:rgba(81,207,102,.1);color:var(--green);}
+
+    .sp-detail{overflow-y:auto;background:var(--s2);}
+    .sp-empty{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--tx3);}
+    .sp-empty svg{width:38px;height:38px;fill:var(--tx3);opacity:.35;}
+
+    #detailMap{height:280px;flex-shrink:0;background:#0d0d0d;}
+    .det-loading{height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--tx2);font-size:.83rem;}
+    .spin{width:22px;height:22px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:sp .7s linear infinite;}
+    @keyframes sp{to{transform:rotate(360deg);}}
+
+    .det-body{padding:15px;}
+    .det-title{font-size:1rem;font-weight:800;margin-bottom:2px;}
+    .det-date{font-size:.75rem;color:var(--tx2);margin-bottom:13px;}
+    .det-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
+    .ds{background:var(--s1);border:1px solid var(--bd);border-radius:9px;padding:11px 12px;}
+    .ds-l{font-size:.58rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+    .ds-v{font-size:1.05rem;font-weight:800;}
+    .ds-v.ac{color:var(--ac);}
+
+    .elev-card{background:var(--s1);border:1px solid var(--bd);border-radius:9px;padding:13px;margin-bottom:11px;}
+    .elev-t{font-size:.58rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;}
+    #elevChart{max-height:90px;}
+
+    .speed-inline{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+    .spi{display:flex;align-items:center;gap:4px;font-size:.67rem;color:var(--tx2);}
+    .spd{width:9px;height:9px;border-radius:50%;}
+
+    .strava-btn{display:inline-flex;align-items:center;gap:6px;background:var(--ac);color:#fff;padding:8px 15px;border-radius:8px;text-decoration:none;font-size:.78rem;font-weight:700;transition:background .15s;}
+    .strava-btn:hover{background:#d93e00;}
+
+    /* ---- ANÁLISIS ---- */
+    .insight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+    @media(max-width:700px){.insight-row{grid-template-columns:1fr;}}
+    .icard{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:17px 18px;}
+    .icard-l{font-size:.6rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;}
+    .icard-v{font-size:1.8rem;font-weight:900;line-height:1;}
+    .icard-v.up{color:var(--green);}
+    .icard-v.dn{color:var(--red);}
+    .icard-v.eq{color:var(--tx2);}
+    .icard-s{font-size:.73rem;color:var(--tx2);margin-top:4px;}
+
+    /* CONNECT */
+    .conn-wrap{min-height:calc(100vh - var(--nav));display:flex;align-items:center;justify-content:center;}
+    .conn-box{text-align:center;max-width:400px;padding:40px 20px;}
+    .conn-box h2{font-size:2.2rem;font-weight:900;line-height:1.1;margin-bottom:12px;}
+    .conn-box p{color:var(--tx2);font-size:.97rem;line-height:1.65;margin-bottom:30px;}
+    .btn-conn{display:inline-block;background:var(--ac);color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.92rem;}
+    .btn-conn:hover{background:#d93e00;}
+
+    /* FILTER BAR */
+    .fbar{display:none;align-items:center;gap:8px;padding:7px 13px;background:var(--ac-dim);border-bottom:1px solid var(--ac-bd);font-size:.75rem;color:var(--ac);}
+    .fbar.on{display:flex;}
+    .fbar button{background:none;border:none;color:var(--ac);cursor:pointer;font-size:.75rem;font-weight:700;font-family:inherit;text-decoration:underline;padding:0;}
+
+    .na{color:var(--tx3);}
+    .empty{padding:30px;text-align:center;color:var(--tx3);font-size:.83rem;}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#">
+    <svg viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+    Mis Rutas
+  </a>
+  {% if connected %}
+  <button class="ntab on" data-s="dashboard" onclick="go('dashboard')">Dashboard</button>
+  <button class="ntab" data-s="mapa" onclick="go('mapa')">Mapa</button>
+  <button class="ntab" data-s="rutas" onclick="go('rutas')">Rutas</button>
+  <button class="ntab" data-s="analisis" onclick="go('analisis')">Análisis</button>
+  <div class="nav-r"><span class="ntag">{{ total_rides }} rutas · {{ "{:,.0f}".format(total_km).replace(',','.') }} km</span></div>
+  {% endif %}
+</nav>
+
+{% if not connected %}
+<div class="sec on" id="s-dashboard">
+  <div class="conn-wrap">
+    <div class="conn-box">
+      <h2>Tus rutas,<br>en un vistazo.</h2>
+      <p>Conecta con Strava para explorar tus rutas, mapas de velocidad, tendencias de progreso y mucho más.</p>
+      <a href="/connect" class="btn-conn">Conectar con Strava</a>
+    </div>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ===== DASHBOARD ===== -->
+<div class="sec on" id="s-dashboard">
+  <div class="inner">
+    <p class="slbl">Totales</p>
+    <div class="g4">
+      <div class="sc"><div class="sc-l">Kilómetros</div><div class="sc-v" id="cnt-km">0</div><div class="sc-u">km recorridos</div></div>
+      <div class="sc"><div class="sc-l">Rutas</div><div class="sc-v" id="cnt-rides">0</div><div class="sc-u">actividades</div></div>
+      <div class="sc"><div class="sc-l">Tiempo total</div><div class="sc-v" id="cnt-h">0</div><div class="sc-u">horas en bici</div></div>
+      <div class="sc"><div class="sc-l">Desnivel</div><div class="sc-v" id="cnt-elev">0</div><div class="sc-u">metros subidos</div></div>
+    </div>
+
+    {% if best_ride or best_elev %}
+    <p class="slbl">Mejores rutas</p>
+    <div class="g-bests">
+      {% if best_ride %}
+      <div class="bc" onclick="goActivity('{{ best_ride.id }}')">
+        <div class="bc-l">Ruta más larga</div>
+        <div class="bc-n">{{ best_ride.name }}</div>
+        <div class="bc-v">{{ best_ride.km }} <span class="bc-u">km</span></div>
+      </div>
+      {% endif %}
+      {% if best_elev %}
+      <div class="bc" onclick="goActivity('{{ best_elev.id }}')">
+        <div class="bc-l">Mayor desnivel</div>
+        <div class="bc-n">{{ best_elev.name }}</div>
+        <div class="bc-v">{{ best_elev.desnivel }} <span class="bc-u">m</span></div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <p class="slbl" style="margin-top:20px;">Actividad reciente</p>
+    <div class="g2" style="margin-bottom:20px;">
+      {% if chart_labels %}
+      <div class="card">
+        <div class="card-t">Km por mes — clic para filtrar rutas</div>
+        <canvas id="kmChart" style="max-height:190px;"></canvas>
+      </div>
+      {% endif %}
+      {% if yearly_list %}
+      <div class="card">
+        <div class="card-t">Por año</div>
+        <table class="yt">
+          <thead><tr><th>Año</th><th>Km</th><th>Rutas</th><th>Horas</th><th>Desnivel</th></tr></thead>
+          <tbody>
+            {% for y in yearly_list %}
+            <tr>
+              <td><span class="yt-y">{{ y.year }}</span></td>
+              <td><span class="yt-k">{{ "{:,}".format(y.km|int).replace(',','.') }}</span></td>
+              <td>{{ y.rides }}</td>
+              <td>{{ y.horas }}h</td>
+              <td>{{ "{:,}".format(y.elevation).replace(',','.') }}m</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAPA ===== -->
+<div class="sec sec-map" id="s-mapa" style="position:fixed;">
+  <div id="mainMap"></div>
+  <div class="mf mc" style="position:absolute;">
+    <div class="mf-t">Modo de mapa</div>
+    <div class="mbts">
+      <button class="mbt on" id="btn-density" onclick="setMapMode('density')">Densidad</button>
+      <button class="mbt" id="btn-speed" onclick="setMapMode('speed')">Velocidad</button>
+    </div>
+    <div id="speed-ctrl" style="display:none;">
+      <div class="mf-t">Selecciona ruta</div>
+      <select class="msel" id="speedSelect" onchange="showSpeedRoute(this.value)">
+        <option value="">— elige una ruta —</option>
+      </select>
+    </div>
+  </div>
+  <div class="mf ml" style="position:absolute;">
+    <div id="density-legend">
+      <div class="mf-t">Densidad de paso</div>
+      <div class="legend-items">
+        <div class="li"><div class="ld" style="background:rgba(252,76,2,.4)"></div>Poco frecuente</div>
+        <div class="li"><div class="ld" style="background:#fc4c02"></div>Habitual</div>
+        <div class="li"><div class="ld" style="background:#fff"></div>Muy frecuente</div>
+      </div>
+    </div>
+    <div id="speed-legend" style="display:none;">
+      <div class="mf-t">Velocidad</div>
+      <div class="legend-items">
+        <div class="li"><div class="ld" style="background:var(--blue)"></div>&lt; 15 km/h</div>
+        <div class="li"><div class="ld" style="background:var(--cyan)"></div>15–20 km/h</div>
+        <div class="li"><div class="ld" style="background:var(--green)"></div>20–25 km/h</div>
+        <div class="li"><div class="ld" style="background:var(--yellow)"></div>25–30 km/h</div>
+        <div class="li"><div class="ld" style="background:var(--red)"></div>&gt; 30 km/h</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RUTAS ===== -->
+<div class="sec sec-split" id="s-rutas" style="position:fixed;">
+  <div class="sp-list">
+    <div class="sp-search">
+      <input type="text" id="listSearch" placeholder="Buscar ruta..." oninput="filterList()">
+    </div>
+    <div class="fbar" id="fbar">
+      <span id="fbar-txt"></span>
+      <button onclick="clearFilter()">Quitar filtro</button>
+    </div>
+    <div id="actList">
+      {% for r in rides %}
+      <div class="ai" id="ai-{{ r.id }}" onclick="selectAct('{{ r.id }}')" data-name="{{ r.name }}" data-date="{{ r.start_date }}">
+        <div class="ai-n">{{ r.name }}</div>
+        <div class="ai-m">
+          <span class="ai-km">{{ r.km }} km</span>
+          <span>{{ r.tiempo }}</span>
+          <span>{{ r.fecha }}</span>
+          {% if r.type == 'VirtualRide' %}<span class="tag tag-v">Virtual</span>
+          {% elif r.type == 'EBikeRide' %}<span class="tag tag-e">E-Bike</span>
+          {% else %}<span class="tag tag-r">Exterior</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="sp-detail" id="sp-detail">
+    <div class="sp-empty" id="det-empty">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <span>Selecciona una ruta</span>
+    </div>
+    <div id="det-content" style="display:none;flex-direction:column;">
+      <div id="detMapWrap">
+        <div class="det-loading" id="det-loading"><div class="spin"></div>Cargando datos de velocidad…</div>
+        <div id="detailMap" style="display:none;"></div>
+      </div>
+      <div class="det-body">
+        <div class="det-title" id="det-title"></div>
+        <div class="det-date" id="det-date"></div>
+        <div class="speed-inline">
+          <div class="spi"><div class="spd" style="background:var(--blue)"></div>&lt;15</div>
+          <div class="spi"><div class="spd" style="background:var(--cyan)"></div>15–20</div>
+          <div class="spi"><div class="spd" style="background:var(--green)"></div>20–25</div>
+          <div class="spi"><div class="spd" style="background:var(--yellow)"></div>25–30</div>
+          <div class="spi"><div class="spd" style="background:var(--red)"></div>&gt;30 km/h</div>
+        </div>
+        <div class="det-g" id="det-stats"></div>
+        <div class="elev-card" id="elev-wrap">
+          <div class="elev-t">Perfil de elevación</div>
+          <canvas id="elevChart"></canvas>
+        </div>
+        <a id="det-link" href="#" target="_blank" class="strava-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+          Ver en Strava
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ANÁLISIS ===== -->
+<div class="sec" id="s-analisis">
+  <div class="inner">
+    <p class="slbl">Tu ruta habitual — tendencias</p>
+    <div class="insight-row" id="insight-cards">
+      <div class="icard"><div class="icard-l">Mejor velocidad media</div><div class="icard-v" id="ins-best">—</div><div class="icard-s" id="ins-best-s"></div></div>
+      <div class="icard"><div class="icard-l">Velocidad media general</div><div class="icard-v" id="ins-avg">—</div><div class="icard-s" id="ins-avg-s"></div></div>
+      <div class="icard"><div class="icard-l">¿Estás mejorando?</div><div class="icard-v" id="ins-trend">—</div><div class="icard-s" id="ins-trend-s"></div></div>
+    </div>
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-t">Velocidad media por salida — ruta habitual (<span id="habitual-km">?</span> km ± 15%)</div>
+      <canvas id="trendChart" style="max-height:210px;"></canvas>
+    </div>
+    <div class="g2" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-t">Velocidad media por día de semana</div>
+        <canvas id="dowChart" style="max-height:190px;"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-t">Distribución de distancias</div>
+        <canvas id="distChart" style="max-height:190px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+{% if connected %}
+<script>
+const DATA = {{ activities_js | safe }};
+const CHART_LABELS = {{ chart_labels | tojson }};
+const CHART_DATA = {{ chart_data | tojson }};
+const CHART_MONTHS = {{ chart_months | tojson }};
+
+// ---- state ----
+let activeSection = 'dashboard';
+let mainMap = null, heatLayer = null, speedPolylines = [];
+let detailMap = null, elevChart = null, kmChart = null, trendChart = null, dowChart = null, distChart = null;
+let selectedId = null;
+let mapMode = 'density';
+let activeMonth = null;
+
+// ---- sorted acts ----
+const ACTS = Object.entries(DATA).map(([id, a]) => ({...a, id}));
+ACTS.sort((a, b) => b.start_date.localeCompare(a.start_date));
+
+// ---- utils ----
+function decodePoly(enc) {
+  const pts = []; let i = 0, lat = 0, lng = 0;
+  while (i < enc.length) {
+    let b, s = 0, r = 0;
+    do { b = enc.charCodeAt(i++) - 63; r |= (b & 0x1f) << s; s += 5; } while (b >= 0x20);
+    lat += (r & 1) ? ~(r >> 1) : (r >> 1); s = 0; r = 0;
+    do { b = enc.charCodeAt(i++) - 63; r |= (b & 0x1f) << s; s += 5; } while (b >= 0x20);
+    lng += (r & 1) ? ~(r >> 1) : (r >> 1);
+    pts.push([lat / 1e5, lng / 1e5]);
+  }
+  return pts;
+}
+
+function speedColor(mps) {
+  const k = mps * 3.6;
+  if (k < 15) return '#4c6ef5';
+  if (k < 20) return '#22b8cf';
+  if (k < 25) return '#51cf66';
+  if (k < 30) return '#ffd43b';
+  return '#ff6b6b';
+}
+
+function numFmt(n) { return Number(n).toLocaleString('es-ES'); }
+
+function animateCount(el, target, decimals, suffix) {
+  const duration = 1200, steps = 50, step = duration / steps;
+  let current = 0;
+  const inc = target / steps;
+  const timer = setInterval(() => {
+    current = Math.min(current + inc, target);
+    el.textContent = (decimals ? current.toFixed(decimals) : Math.round(current)).toLocaleString('es-ES') + (suffix || '');
+    if (current >= target) clearInterval(timer);
+  }, step);
+}
+
+// ---- navigation ----
+function go(name) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'));
+  document.getElementById('s-' + name).classList.add('on');
+  document.querySelector(`[data-s="${name}"]`).classList.add('on');
+  activeSection = name;
+  if (name === 'mapa') { setTimeout(() => { if (!mainMap) initMainMap(); else mainMap.invalidateSize(); }, 60); }
+  if (name === 'analisis') initAnalisis();
+}
+
+function goActivity(id) { go('rutas'); setTimeout(() => selectAct(String(id)), 100); }
+
+// ---- DASHBOARD ----
+window.addEventListener('DOMContentLoaded', () => {
+  animateCount(document.getElementById('cnt-km'), {{ total_km }}, 1);
+  animateCount(document.getElementById('cnt-rides'), {{ total_rides }}, 0);
+  animateCount(document.getElementById('cnt-h'), {{ total_horas }}, 1);
+  animateCount(document.getElementById('cnt-elev'), {{ total_elevation }}, 0);
+  initKmChart();
+  populateSpeedSelect();
+});
+
+function initKmChart() {
+  if (!document.getElementById('kmChart')) return;
+  kmChart = new Chart(document.getElementById('kmChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: CHART_LABELS,
+      datasets: [{ data: CHART_DATA, backgroundColor: 'rgba(252,76,2,.65)', borderColor: '#fc4c02', borderWidth: 0, borderRadius: 5, hoverBackgroundColor: '#fc4c02' }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + ' km' } } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#1c1c1c' }, ticks: { color: '#666', font: { size: 11 } } },
+        x: { grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } }
+      },
+      onClick: (e, elements) => {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        filterByMonth(CHART_MONTHS[idx]);
+      }
+    }
+  });
+}
+
+// ---- FILTER BY MONTH ----
+function filterByMonth(month) {
+  activeMonth = month;
+  const label = month.slice(5) + '/' + month.slice(2, 4);
+  document.getElementById('fbar').classList.add('on');
+  document.getElementById('fbar-txt').textContent = `Mostrando rutas de ${label}`;
+  filterList();
+  go('rutas');
+}
+
+function clearFilter() {
+  activeMonth = null;
+  document.getElementById('fbar').classList.remove('on');
+  filterList();
+}
+
+function filterList() {
+  const q = document.getElementById('listSearch').value.toLowerCase();
+  document.querySelectorAll('.ai').forEach(el => {
+    const nameMatch = el.dataset.name.toLowerCase().includes(q);
+    const monthMatch = !activeMonth || el.dataset.date.startsWith(activeMonth);
+    el.style.display = (nameMatch && monthMatch) ? '' : 'none';
+  });
+}
+
+// ---- MAPA ----
+function initMainMap() {
+  mainMap = L.map('mainMap', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mainMap);
+
+  // Build heatmap points
+  const pts = [];
+  const allBounds = [];
+  Object.values(DATA).forEach(a => {
+    if (!a.polyline) return;
+    const decoded = decodePoly(a.polyline);
+    decoded.forEach(p => pts.push([p[0], p[1], 0.6]));
+    allBounds.push(...decoded);
+  });
+
+  if (pts.length) {
+    heatLayer = L.heatLayer(pts, { radius: 14, blur: 18, maxZoom: 17, gradient: { 0.3: 'rgba(252,76,2,.5)', 0.6: '#fc4c02', 1: '#fff' } });
+    heatLayer.addTo(mainMap);
+    try { mainMap.fitBounds(L.latLngBounds(allBounds), { padding: [40, 40] }); } catch(_) {}
+  }
+}
+
+function setMapMode(mode) {
+  mapMode = mode;
+  document.getElementById('btn-density').classList.toggle('on', mode === 'density');
+  document.getElementById('btn-speed').classList.toggle('on', mode === 'speed');
+  document.getElementById('speed-ctrl').style.display = mode === 'speed' ? 'block' : 'none';
+  document.getElementById('density-legend').style.display = mode === 'density' ? 'block' : 'none';
+  document.getElementById('speed-legend').style.display = mode === 'speed' ? 'block' : 'none';
+
+  if (!mainMap) return;
+  if (mode === 'density') {
+    clearSpeedLayers();
+    if (heatLayer) heatLayer.addTo(mainMap);
+  } else {
+    if (heatLayer) mainMap.removeLayer(heatLayer);
+  }
+}
+
+function clearSpeedLayers() {
+  speedPolylines.forEach(p => mainMap.removeLayer(p));
+  speedPolylines = [];
+}
+
+function populateSpeedSelect() {
+  const sel = document.getElementById('speedSelect');
+  ACTS.forEach(a => {
+    if (!a.polyline) return;
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.fecha} — ${a.name} (${a.km} km)`;
+    sel.appendChild(opt);
+  });
+}
+
+async function showSpeedRoute(id) {
+  if (!id || !mainMap) return;
+  clearSpeedLayers();
+  if (heatLayer) mainMap.removeLayer(heatLayer);
+
+  const a = DATA[id];
+  if (!a || !a.polyline) return;
+
+  try {
+    const res = await fetch(`/api/streams/${id}`);
+    const streams = await res.json();
+    const latlng = streams.latlng?.data || [];
+    const vel = streams.velocity_smooth?.data || [];
+
+    if (latlng.length && vel.length) {
+      let segStart = 0;
+      let curColor = speedColor(vel[0]);
+      for (let i = 1; i <= latlng.length - 1; i++) {
+        const c = speedColor(vel[i] || vel[i - 1]);
+        if (c !== curColor || i === latlng.length - 1) {
+          const pl = L.polyline(latlng.slice(segStart, i + 1), { color: curColor, weight: 4, opacity: .9 });
+          pl.addTo(mainMap);
+          speedPolylines.push(pl);
+          segStart = i; curColor = c;
+        }
+      }
+      if (latlng.length) mainMap.fitBounds(L.latLngBounds(latlng), { padding: [30, 30] });
+    } else {
+      const pts = decodePoly(a.polyline);
+      const pl = L.polyline(pts, { color: '#fc4c02', weight: 4 });
+      pl.addTo(mainMap);
+      speedPolylines.push(pl);
+      mainMap.fitBounds(pl.getBounds(), { padding: [30, 30] });
+    }
+  } catch (_) {
+    const pts = decodePoly(a.polyline);
+    const pl = L.polyline(pts, { color: '#fc4c02', weight: 4 });
+    pl.addTo(mainMap); speedPolylines.push(pl);
+    mainMap.fitBounds(pl.getBounds(), { padding: [30, 30] });
+  }
+}
+
+// ---- RUTAS DETAIL ----
+async function selectAct(id) {
+  document.querySelectorAll('.ai').forEach(el => el.classList.remove('sel'));
+  const item = document.getElementById('ai-' + id);
+  if (item) { item.classList.add('sel'); item.scrollIntoView({ block: 'nearest' }); }
+
+  selectedId = id;
+  const a = DATA[id];
+  if (!a) return;
+
+  document.getElementById('det-empty').style.display = 'none';
+  const content = document.getElementById('det-content');
+  content.style.display = 'flex';
+
+  document.getElementById('det-title').textContent = a.name;
+  document.getElementById('det-date').textContent = a.fecha;
+  document.getElementById('det-link').href = `https://www.strava.com/activities/${id}`;
+
+  const statsData = [
+    { l: 'Distancia', v: a.km + ' km', ac: true },
+    { l: 'Tiempo', v: a.tiempo },
+    { l: 'Ritmo', v: a.ritmo + ' /km' },
+    { l: 'Vel. media', v: a.velocidad + ' km/h' },
+    { l: 'Vel. máx', v: a.max_velocidad + ' km/h' },
+    { l: 'Desnivel', v: a.desnivel + ' m' },
+    { l: 'FC media', v: a.pulsaciones ? a.pulsaciones + ' bpm' : '—' },
+    { l: 'FC máx', v: a.max_pulsaciones ? a.max_pulsaciones + ' bpm' : '—' },
+    { l: 'Calorías', v: a.calorias ? a.calorias + ' kcal' : '—' },
+  ];
+  document.getElementById('det-stats').innerHTML = statsData.map(s =>
+    `<div class="ds"><div class="ds-l">${s.l}</div><div class="ds-v${s.ac ? ' ac' : ''}">${s.v}</div></div>`
+  ).join('');
+
+  // Map
+  document.getElementById('det-loading').style.display = 'flex';
+  document.getElementById('detailMap').style.display = 'none';
+  if (detailMap) { detailMap.remove(); detailMap = null; }
+  document.getElementById('elev-wrap').style.display = 'none';
+  if (elevChart) { elevChart.destroy(); elevChart = null; }
+
+  try {
+    const res = await fetch(`/api/streams/${id}`);
+    const streams = await res.json();
+    const latlng = streams.latlng?.data || [];
+    const vel = streams.velocity_smooth?.data || [];
+    const alt = streams.altitude?.data || [];
+
+    document.getElementById('det-loading').style.display = 'none';
+    const mapEl = document.getElementById('detailMap');
+    mapEl.style.display = 'block';
+
+    detailMap = L.map('detailMap', { zoomControl: true, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(detailMap);
+
+    if (latlng.length && vel.length) {
+      let segStart = 0, curColor = speedColor(vel[0]);
+      for (let i = 1; i <= latlng.length - 1; i++) {
+        const c = speedColor(vel[i] || vel[i - 1]);
+        if (c !== curColor || i === latlng.length - 1) {
+          L.polyline(latlng.slice(segStart, i + 1), { color: curColor, weight: 4, opacity: .9 }).addTo(detailMap);
+          segStart = i; curColor = c;
+        }
+      }
+      if (latlng.length) {
+        L.circleMarker(latlng[0], { radius: 6, color: '#fff', fillColor: '#51cf66', fillOpacity: 1, weight: 2 }).addTo(detailMap);
+        L.circleMarker(latlng[latlng.length - 1], { radius: 6, color: '#fff', fillColor: '#ff6b6b', fillOpacity: 1, weight: 2 }).addTo(detailMap);
+        detailMap.fitBounds(L.latLngBounds(latlng), { padding: [20, 20] });
+      }
+    } else if (a.polyline) {
+      const pts = decodePoly(a.polyline);
+      L.polyline(pts, { color: '#fc4c02', weight: 4 }).addTo(detailMap);
+      detailMap.fitBounds(L.latLngBounds(pts), { padding: [20, 20] });
+    }
+
+    // Elevation profile
+    if (alt.length > 5) {
+      document.getElementById('elev-wrap').style.display = 'block';
+      const step = Math.max(1, Math.floor(alt.length / 300));
+      const sampled = alt.filter((_, i) => i % step === 0);
+      elevChart = new Chart(document.getElementById('elevChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: sampled.map((_, i) => i),
+          datasets: [{ data: sampled, fill: true, backgroundColor: 'rgba(252,76,2,.12)', borderColor: 'rgba(252,76,2,.7)', borderWidth: 1.5, pointRadius: 0, tension: 0.3 }]
+        },
+        options: {
+          animation: false, responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { grid: { color: '#1c1c1c' }, ticks: { color: '#555', font: { size: 10 }, callback: v => v + 'm' } }
+          }
+        }
+      });
+    }
+  } catch (_) {
+    document.getElementById('det-loading').style.display = 'none';
+    const mapEl = document.getElementById('detailMap');
+    mapEl.style.display = 'block';
+    detailMap = L.map('detailMap', { zoomControl: false, attributionControl: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(detailMap);
+    if (a.polyline) {
+      const pts = decodePoly(a.polyline);
+      const pl = L.polyline(pts, { color: '#fc4c02', weight: 4 }).addTo(detailMap);
+      detailMap.fitBounds(pl.getBounds(), { padding: [20, 20] });
+    }
+  }
+}
+
+// ---- ANÁLISIS ----
+function initAnalisis() {
+  const acts = [...ACTS].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  if (acts.length === 0) return;
+
+  // Habitual route: within 15% of median km
+  const kms = [...acts].map(a => a.km).sort((a, b) => a - b);
+  const medKm = kms[Math.floor(kms.length / 2)];
+  const hab = acts.filter(a => Math.abs(a.km - medKm) / medKm < 0.15);
+  document.getElementById('habitual-km').textContent = medKm.toFixed(1);
+
+  // Insights
+  const speeds = hab.map(a => a.velocidad);
+  const best = Math.max(...speeds);
+  const avg = speeds.reduce((s, v) => s + v, 0) / speeds.length;
+  const last = speeds[speeds.length - 1];
+
+  document.getElementById('ins-best').textContent = best.toFixed(1) + ' km/h';
+  document.getElementById('ins-best-s').textContent = `en ${hab.find(a => a.velocidad === best)?.fecha || ''}`;
+  document.getElementById('ins-avg').textContent = avg.toFixed(1) + ' km/h';
+  document.getElementById('ins-avg-s').textContent = `media de ${hab.length} salidas`;
+
+  // Trend: linear regression on speed
+  let trendText = '—', trendClass = 'eq', trendSub = 'Necesitas más salidas';
+  if (speeds.length >= 3) {
+    const n = speeds.length;
+    const xs = speeds.map((_, i) => i);
+    const sx = xs.reduce((a, b) => a + b, 0);
+    const sy = speeds.reduce((a, b) => a + b, 0);
+    const sxy = xs.reduce((s, x, i) => s + x * speeds[i], 0);
+    const sx2 = xs.reduce((s, x) => s + x * x, 0);
+    const slope = (n * sxy - sx * sy) / (n * sx2 - sx * sx);
+    const pct = Math.abs(slope * n / avg * 100).toFixed(1);
+    if (slope > 0.03) { trendText = '↑ Mejorando'; trendClass = 'up'; trendSub = `+${pct}% de tendencia en ${n} salidas`; }
+    else if (slope < -0.03) { trendText = '↓ Bajando'; trendClass = 'dn'; trendSub = `-${pct}% de tendencia en ${n} salidas`; }
+    else { trendText = '→ Estable'; trendClass = 'eq'; trendSub = `Sin cambios significativos en ${n} salidas`; }
+  }
+  document.getElementById('ins-trend').textContent = trendText;
+  document.getElementById('ins-trend').className = 'icard-v ' + trendClass;
+  document.getElementById('ins-trend-s').textContent = trendSub;
+
+  // Trend chart
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  if (document.getElementById('trendChart') && hab.length >= 2) {
+    const rolling = speeds.map((_, i) => {
+      const sl = speeds.slice(Math.max(0, i - 2), Math.min(speeds.length, i + 3));
+      return sl.reduce((a, b) => a + b, 0) / sl.length;
+    });
+    trendChart = new Chart(document.getElementById('trendChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: hab.map(a => a.fecha),
+        datasets: [
+          { label: 'Vel. media', data: speeds, borderColor: 'rgba(252,76,2,.5)', backgroundColor: 'rgba(252,76,2,.05)', pointRadius: 4, pointBackgroundColor: '#fc4c02', borderWidth: 1.5, tension: 0.2, fill: true },
+          { label: 'Tendencia (media móvil)', data: rolling, borderColor: '#fff', pointRadius: 0, borderWidth: 2, tension: 0.4, borderDash: [4, 3] }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#888', font: { size: 11 } } }, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y.toFixed(1) + ' km/h' } } },
+        scales: {
+          y: { grid: { color: '#1c1c1c' }, ticks: { color: '#555', font: { size: 11 }, callback: v => v + ' km/h' } },
+          x: { grid: { display: false }, ticks: { color: '#555', font: { size: 10 }, maxTicksLimit: 8 } }
+        }
+      }
+    });
+  }
+
+  // Day of week chart
+  if (dowChart) { dowChart.destroy(); dowChart = null; }
+  if (document.getElementById('dowChart')) {
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const dow = Array(7).fill(null).map(() => ({ count: 0, speed: 0 }));
+    acts.forEach(a => {
+      const d = new Date(a.start_date).getDay();
+      dow[d].count++;
+      dow[d].speed += a.velocidad;
+    });
+    const dowAvg = dow.map(d => d.count ? +(d.speed / d.count).toFixed(1) : 0);
+    dowChart = new Chart(document.getElementById('dowChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: days,
+        datasets: [{ data: dowAvg, backgroundColor: dowAvg.map(v => v === Math.max(...dowAvg) ? '#fc4c02' : 'rgba(252,76,2,.35)'), borderRadius: 5, borderWidth: 0 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + ' km/h media' } } },
+        scales: {
+          y: { beginAtZero: false, grid: { color: '#1c1c1c' }, ticks: { color: '#555', font: { size: 11 }, callback: v => v + ' km/h' } },
+          x: { grid: { display: false }, ticks: { color: '#666', font: { size: 12 } } }
+        }
+      }
+    });
+  }
+
+  // Distance distribution
+  if (distChart) { distChart.destroy(); distChart = null; }
+  if (document.getElementById('distChart')) {
+    const buckets = {};
+    acts.forEach(a => {
+      const b = Math.floor(a.km / 5) * 5;
+      const key = `${b}–${b + 5}`;
+      buckets[key] = (buckets[key] || 0) + 1;
+    });
+    const sorted = Object.entries(buckets).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+    distChart = new Chart(document.getElementById('distChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: sorted.map(e => e[0] + ' km'),
+        datasets: [{ data: sorted.map(e => e[1]), backgroundColor: 'rgba(252,76,2,.5)', borderColor: '#fc4c02', borderWidth: 1, borderRadius: 4 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + ' salidas' } } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#1c1c1c' }, ticks: { color: '#555', font: { size: 11 } } },
+          x: { grid: { display: false }, ticks: { color: '#555', font: { size: 10 }, maxRotation: 45 } }
+        }
+      }
+    });
+  }
+}
+</script>
+{% endif %}
+</body>
+</html>
