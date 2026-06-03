@@ -282,6 +282,63 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   .detail-panel.open{right:0}
 }
 
+/* ── ROAD TO BANGKOK ── */
+.rtb-hero{background:linear-gradient(135deg,#0a0a0a,#1a0800,#0a0a0a);
+  border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;
+  display:flex;align-items:center;gap:20px}
+.rtb-hero-text h2{font-size:1.4rem;font-weight:900;
+  background:linear-gradient(90deg,#fc4c02,#ff9f00,#fc4c02);
+  background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shimmer 3s linear infinite}
+@keyframes shimmer{to{background-position:200% center}}
+.rtb-hero-text p{font-size:.8rem;color:var(--muted);margin-top:4px}
+.rtb-emoji{font-size:2.4rem}
+.rtb-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.rtb-stat{background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px;text-align:center}
+.rtb-stat.highlight{border-color:var(--ac);background:linear-gradient(135deg,#1a0800,var(--card))}
+.rtb-stat-val{font-size:1.7rem;font-weight:800;color:var(--ac);line-height:1}
+.rtb-stat-lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:5px}
+.rtb-progress-wrap{background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:16px;margin-bottom:20px}
+.rtb-progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.rtb-progress-title{font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.rtb-pct-label{font-size:1.1rem;font-weight:800;color:var(--ac)}
+.rtb-progress-bar{height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+.rtb-progress-fill{height:100%;border-radius:5px;
+  background:linear-gradient(90deg,#fc4c02,#ff9f00);
+  transition:width 1.5s ease;position:relative}
+.rtb-progress-fill::after{
+  content:'🚴';position:absolute;right:-12px;top:-8px;font-size:1.1rem;
+}
+#rtb-map{height:480px;border-radius:12px;border:1px solid var(--border);margin-bottom:20px}
+.cyclist-marker{filter:drop-shadow(0 2px 6px rgba(252,76,2,.6))}
+.cyclist-marker .wheel-spin{animation:wspin 0.35s linear infinite;transform-box:fill-box;transform-origin:center}
+.rtb-cities-title{font-size:1rem;font-weight:700;color:var(--text);
+  margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border);
+  display:flex;align-items:center;gap:8px}
+.rtb-cities-list{display:flex;flex-direction:column;gap:6px}
+.city-row{display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-radius:10px;border:1px solid var(--border);background:var(--card);transition:all .2s}
+.city-row.done{opacity:.55;background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.2)}
+.city-row.next{border-color:var(--ac);background:linear-gradient(135deg,#1a0800,var(--card));
+  box-shadow:0 0 12px rgba(252,76,2,.15)}
+.city-row.future{opacity:.4}
+.city-flag{font-size:1.3rem;width:28px;text-align:center;flex-shrink:0}
+.city-info{flex:1;min-width:0}
+.city-name{font-size:.9rem;font-weight:700}
+.city-desc{font-size:.72rem;color:var(--muted);margin-top:2px}
+.city-row.done .city-name{color:var(--green)}
+.city-row.next .city-name{color:var(--ac)}
+.city-km{text-align:right;flex-shrink:0}
+.city-km-val{font-size:.85rem;font-weight:700}
+.city-km-lbl{font-size:.65rem;color:var(--muted)}
+.city-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:.5px;margin-left:8px;flex-shrink:0}
+.city-badge.done{background:rgba(34,197,94,.15);color:var(--green)}
+.city-badge.next{background:rgba(252,76,2,.15);color:var(--ac)}
+@media(max-width:640px){.rtb-map-el{height:300px}}
+
 /* Count-up animation */
 .count-target{transition:color .3s}
 
@@ -376,6 +433,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <button class="nav-btn" onclick="showPage('analisis',this)">📈 Análisis</button>
   <button class="nav-btn" onclick="showPage('records',this)">🏆 Records</button>
   <button class="nav-btn" onclick="showPage('retos',this)">🎯 Retos</button>
+  <button class="nav-btn" onclick="showPage('rtb',this)">🗺️ Road to Bangkok</button>
 </nav>
 {% endif %}
 
@@ -588,6 +646,40 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 {% endif %}
 
+<!-- ═══════════════ ROAD TO BANGKOK ═══════════════ -->
+<div class="page" id="page-rtb">
+
+  <div class="rtb-hero">
+    <div class="rtb-emoji">🌏</div>
+    <div class="rtb-hero-text">
+      <h2>Alberto · Road to Bangkok</h2>
+      <p>Leganés (Madrid) → Bangkok (Tailandia) &nbsp;·&nbsp; ~10.600 km · Ruta de la Seda en bici</p>
+    </div>
+  </div>
+
+  <div class="rtb-stats" id="rtbStats"></div>
+
+  <div class="rtb-progress-wrap">
+    <div class="rtb-progress-header">
+      <span class="rtb-progress-title">Progreso de la ruta</span>
+      <span class="rtb-pct-label" id="rtbPct">0%</span>
+    </div>
+    <div class="rtb-progress-bar">
+      <div class="rtb-progress-fill" id="rtbBar" style="width:0%"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:.7rem;color:var(--muted)">
+      <span>🏁 Leganés</span><span>🏁 Bangkok</span>
+    </div>
+  </div>
+
+  <div id="rtb-map" class="rtb-map-el"></div>
+
+  <div class="rtb-cities-title"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--ac);display:inline-block"></span> Ciudades del recorrido</div>
+  <div class="rtb-cities-list" id="rtbCities"></div>
+  <div style="height:24px"></div>
+
+</div>
+
 <!-- ══════════ DETAIL PANEL ══════════ -->
 <div class="overlay" id="overlay" onclick="closeDetail()"></div>
 <div class="detail-panel" id="detailPanel">
@@ -653,7 +745,7 @@ const CD = {
 };
 
 // ═══════════════ PAGE SWITCHING ═══════════════
-let mapInit=false, analInit=false, recInit=false, retosInit=false;
+let mapInit=false, analInit=false, recInit=false, retosInit=false, rtbInit=false;
 
 function showPage(id, btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -664,6 +756,7 @@ function showPage(id, btn){
   if(id==='analisis' && !analInit) initAnalysis();
   if(id==='records' && !recInit) initRecords();
   if(id==='retos' && !retosInit) initRetos();
+  if(id==='rtb' && !rtbInit) initRTB();
 }
 
 // ═══════════════ DASHBOARD INIT ═══════════════
@@ -1295,6 +1388,211 @@ function initRetos(){
     html+='</div>';
   });
   document.getElementById('retosContent').innerHTML=html;
+}
+
+// ═══════════════ ROAD TO BANGKOK ═══════════════
+function initRTB(){
+  rtbInit=true;
+
+  const TOTAL_KM = Math.round(Object.values(ACTIVITIES).reduce((s,r)=>s+r.km,0));
+  const ROUTE_TOTAL = 10600;
+
+  // ── Cities / milestones ──
+  const CITIES = [
+    {n:'Leganés',     flag:'🇪🇸', km:0,     lat:40.33, lng:-3.76,  desc:'El punto de salida. ¡A pedalar!'},
+    {n:'Madrid',      flag:'🇪🇸', km:10,    lat:40.42, lng:-3.70,  desc:'Capital de España, primera etapa'},
+    {n:'Zaragoza',    flag:'🇪🇸', km:320,   lat:41.65, lng:-0.88,  desc:'Orillas del Ebro, patria del motín'},
+    {n:'Barcelona',   flag:'🇪🇸', km:620,   lat:41.39, lng:2.17,   desc:'La Ciudad Condal. Al Mediterráneo'},
+    {n:'Montpellier', flag:'🇫🇷', km:880,   lat:43.61, lng:3.88,   desc:'Primera ciudad francesa del camino'},
+    {n:'Marsella',    flag:'🇫🇷', km:1030,  lat:43.30, lng:5.37,   desc:'El gran puerto del sur de Francia'},
+    {n:'Niza',        flag:'🇫🇷', km:1180,  lat:43.71, lng:7.26,   desc:'Costa Azul. Dernière étape en France'},
+    {n:'Génova',      flag:'🇮🇹', km:1350,  lat:44.41, lng:8.93,   desc:'Tierra de pesto, Liguria italiana'},
+    {n:'Roma',        flag:'🇮🇹', km:1870,  lat:41.90, lng:12.50,  desc:'La Ciudad Eterna. Todos los caminos…'},
+    {n:'Brindisi',    flag:'🇮🇹', km:2170,  lat:40.64, lng:17.95,  desc:'Fin de la Vía Appia, inicio del mar'},
+    {n:'Atenas',      flag:'🇬🇷', km:2550,  lat:37.98, lng:23.73,  desc:'Cuna de la democracia y filosofía'},
+    {n:'Estambul',    flag:'🇹🇷', km:3020,  lat:41.01, lng:28.98,  desc:'Donde Europa se funde con Asia'},
+    {n:'Ankara',      flag:'🇹🇷', km:3330,  lat:39.93, lng:32.86,  desc:'Capital moderna de Turquía'},
+    {n:'Erzurum',     flag:'🇹🇷', km:3870,  lat:39.91, lng:41.27,  desc:'Las alturas del este de Anatolia'},
+    {n:'Tiflis',      flag:'🇬🇪', km:4240,  lat:41.69, lng:44.80,  desc:'La joya del Cáucaso georgiano'},
+    {n:'Tabriz',      flag:'🇮🇷', km:4720,  lat:38.08, lng:46.29,  desc:'Ciudad histórica del noroeste iraní'},
+    {n:'Teherán',     flag:'🇮🇷', km:5200,  lat:35.69, lng:51.42,  desc:'La capital de Persia moderna'},
+    {n:'Isfahán',     flag:'🇮🇷', km:5600,  lat:32.66, lng:51.68,  desc:'"La mitad del mundo" – dicen los iraníes'},
+    {n:'Zahedán',     flag:'🇮🇷', km:6350,  lat:29.50, lng:60.86,  desc:'La puerta al Pakistán por el desierto'},
+    {n:'Quetta',      flag:'🇵🇰', km:6950,  lat:30.18, lng:67.01,  desc:'El balcón del Baluchistán pakistaní'},
+    {n:'Lahore',      flag:'🇵🇰', km:7550,  lat:31.55, lng:74.34,  desc:'La ciudad de los jardines y el Moghul'},
+    {n:'Nueva Delhi', flag:'🇮🇳', km:7980,  lat:28.61, lng:77.21,  desc:'Capital de la India, caos y colores'},
+    {n:'Varanasi',    flag:'🇮🇳', km:8520,  lat:25.32, lng:82.97,  desc:'La ciudad sagrada del río Ganges'},
+    {n:'Kolkata',     flag:'🇮🇳', km:8960,  lat:22.57, lng:88.36,  desc:'La ciudad de la alegría y del té'},
+    {n:'Dhaka',       flag:'🇧🇩', km:9160,  lat:23.81, lng:90.41,  desc:'La ruidosa capital de Bangladesh'},
+    {n:'Mandalay',    flag:'🇲🇲', km:9720,  lat:21.97, lng:96.08,  desc:'Última capital real de Birmania'},
+    {n:'Yangón',      flag:'🇲🇲', km:10060, lat:16.87, lng:96.20,  desc:'La ciudad de las mil pagodas doradas'},
+    {n:'Bangkok',     flag:'🇹🇭', km:10600, lat:13.76, lng:100.50, desc:'🏁 ¡DESTINO FINAL! Lo has conseguido, Alberzonee'},
+  ];
+
+  // ── Find current position ──
+  function getPosAtKm(km){
+    const clamped = Math.min(km, ROUTE_TOTAL);
+    for(let i=0;i<CITIES.length-1;i++){
+      const a=CITIES[i], b=CITIES[i+1];
+      if(clamped>=a.km && clamped<=b.km){
+        const t=(clamped-a.km)/(b.km-a.km);
+        return {lat:a.lat+t*(b.lat-a.lat), lng:a.lng+t*(b.lng-a.lng)};
+      }
+    }
+    return {lat:CITIES[CITIES.length-1].lat, lng:CITIES[CITIES.length-1].lng};
+  }
+
+  const pos     = getPosAtKm(TOTAL_KM);
+  const pct     = Math.min(TOTAL_KM/ROUTE_TOTAL*100, 100).toFixed(1);
+  const kmLeft  = Math.max(ROUTE_TOTAL - TOTAL_KM, 0);
+
+  // Find last passed and next city
+  const lastCity = [...CITIES].reverse().find(c=>c.km<=TOTAL_KM) || CITIES[0];
+  const nextCity = CITIES.find(c=>c.km>TOTAL_KM);
+  const kmToNext = nextCity ? nextCity.km - TOTAL_KM : 0;
+
+  // ── Top stats ──
+  document.getElementById('rtbStats').innerHTML = `
+    <div class="rtb-stat highlight">
+      <div class="rtb-stat-val">${TOTAL_KM.toLocaleString()}</div>
+      <div class="rtb-stat-lbl">km acumulados</div>
+    </div>
+    <div class="rtb-stat">
+      <div class="rtb-stat-val">${pct}%</div>
+      <div class="rtb-stat-lbl">de la ruta</div>
+    </div>
+    <div class="rtb-stat">
+      <div class="rtb-stat-val" style="font-size:1.1rem">${lastCity.n}</div>
+      <div class="rtb-stat-lbl">última ciudad</div>
+    </div>
+    <div class="rtb-stat">
+      <div class="rtb-stat-val" style="font-size:nextCity?'1.1rem':'1rem'">${nextCity?nextCity.n:'Bangkok 🏁'}</div>
+      <div class="rtb-stat-lbl">${nextCity?'próxima ciudad':'¡ya llegaste!'}</div>
+    </div>
+    <div class="rtb-stat">
+      <div class="rtb-stat-val">${nextCity?kmToNext.toLocaleString():0}</div>
+      <div class="rtb-stat-lbl">km para la siguiente</div>
+    </div>
+    <div class="rtb-stat">
+      <div class="rtb-stat-val">${kmLeft.toLocaleString()}</div>
+      <div class="rtb-stat-lbl">km para Bangkok</div>
+    </div>`;
+
+  // Progress bar
+  setTimeout(()=>{
+    document.getElementById('rtbBar').style.width = pct+'%';
+    document.getElementById('rtbPct').textContent = pct+'%';
+  },200);
+
+  // ── Map ──
+  const rtbMap = L.map('rtb-map').setView([35, 40], 3);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {attribution:'© CARTO', maxZoom:18}).addTo(rtbMap);
+
+  // Full route line (dashed grey)
+  const routeCoords = CITIES.map(c=>[c.lat, c.lng]);
+  L.polyline(routeCoords, {
+    color:'#555', weight:2.5, dashArray:'8 6', opacity:.6
+  }).addTo(rtbMap);
+
+  // Completed portion (solid orange)
+  const doneCoords = CITIES.filter(c=>c.km<=TOTAL_KM).map(c=>[c.lat,c.lng]);
+  if(pos && doneCoords.length){
+    doneCoords.push([pos.lat, pos.lng]);
+    L.polyline(doneCoords, {color:'#fc4c02', weight:3.5, opacity:.9}).addTo(rtbMap);
+  }
+
+  // City markers
+  CITIES.forEach(city=>{
+    const done  = city.km < TOTAL_KM;
+    const isNext= nextCity && city.n===nextCity.n;
+    const color = done?'#22c55e':isNext?'#fc4c02':'#444';
+    const size  = isNext?10:done?7:5;
+    L.circleMarker([city.lat, city.lng],{
+      radius:size, color:color, fillColor:color, fillOpacity:1, weight:0
+    }).addTo(rtbMap).bindTooltip(
+      `<strong>${city.flag} ${city.n}</strong><br>${city.km.toLocaleString()} km desde Leganés`,
+      {direction:'top', className:''}
+    );
+  });
+
+  // Cyclist marker at current position
+  const cyclistSVG = `<svg viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg" width="80" height="53">
+    <g transform="translate(18,44)">
+      <circle class="wheel-spin" cx="0" cy="0" r="13" fill="none" stroke="#444" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="4" fill="none" stroke="#666" stroke-width="1"/>
+      <line class="wheel-spin" x1="-13" y1="0" x2="13" y2="0" stroke="#555" stroke-width="1.2"/>
+      <line class="wheel-spin" x1="0" y1="-13" x2="0" y2="13" stroke="#555" stroke-width="1.2"/>
+      <circle cx="0" cy="0" r="2.5" fill="#fc4c02"/>
+    </g>
+    <g transform="translate(72,44)">
+      <circle class="wheel-spin" cx="0" cy="0" r="13" fill="none" stroke="#444" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="4" fill="none" stroke="#666" stroke-width="1"/>
+      <line class="wheel-spin" x1="-13" y1="0" x2="13" y2="0" stroke="#555" stroke-width="1.2"/>
+      <line class="wheel-spin" x1="0" y1="-13" x2="0" y2="13" stroke="#555" stroke-width="1.2"/>
+      <circle cx="0" cy="0" r="2.5" fill="#fc4c02"/>
+    </g>
+    <line x1="18" y1="44" x2="38" y2="22" stroke="#0057b8" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="38" y1="22" x2="55" y2="44" stroke="#0057b8" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="18" y1="44" x2="55" y2="44" stroke="#0057b8" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="55" y1="44" x2="72" y2="44" stroke="#0057b8" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="55" y1="30" x2="72" y2="44" stroke="#0057b8" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="38" y1="22" x2="55" y2="30" stroke="#0057b8" stroke-width="2" stroke-linecap="round"/>
+    <line x1="55" y1="30" x2="66" y2="21" stroke="#aaa" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="64" y1="18" x2="68" y2="24" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>
+    <rect x="32" y="20" width="13" height="3" rx="1.5" fill="#222" stroke="#555" stroke-width=".8"/>
+    <line x1="38" y1="22" x2="38" y2="36" stroke="#0057b8" stroke-width="1.8"/>
+    <ellipse cx="49" cy="25" rx="8" ry="9" fill="#009fe3"/>
+    <rect x="43" y="21" width="12" height="3.5" rx="1" fill="#00b050"/>
+    <line x1="50" y1="22" x2="63" y2="27" stroke="#009fe3" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="50" cy="13" rx="7" ry="6" fill="#009fe3"/>
+    <line x1="43" y1="12" x2="57" y2="12" stroke="#00b050" stroke-width="1.5"/>
+    <ellipse cx="53" cy="17" rx="4" ry="3.5" fill="#f5c895"/>
+    <ellipse cx="53" cy="16" rx="3" ry="1.5" fill="none" stroke="#222" stroke-width=".8"/>
+    <line x1="46" y1="33" x2="42" y2="42" stroke="#1a6fbf" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="42" y1="42" x2="37" y2="38" stroke="#1a6fbf" stroke-width="3" stroke-linecap="round"/>
+    <line x1="52" y1="33" x2="55" y2="42" stroke="#0057b8" stroke-width="3.5" stroke-linecap="round"/>
+    <ellipse cx="37" cy="39" rx="4" ry="2" fill="#fff"/>
+  </svg>`;
+
+  const cyclistIcon = L.divIcon({
+    html: cyclistSVG,
+    className: 'cyclist-marker',
+    iconSize: [80, 53],
+    iconAnchor: [40, 50]
+  });
+
+  L.marker([pos.lat, pos.lng], {icon: cyclistIcon})
+    .addTo(rtbMap)
+    .bindPopup(`<strong>🚴 Alberzonee está aquí</strong><br>${TOTAL_KM.toLocaleString()} km completados<br>Cerca de: ${lastCity.n}`)
+    .openPopup();
+
+  // ── Cities table ──
+  document.getElementById('rtbCities').innerHTML = CITIES.map(city=>{
+    const done   = city.km < TOTAL_KM;
+    const isNext = nextCity && city.n===nextCity.n;
+    const isCurrent = city.n===lastCity.n && !done;
+    const cls    = done?'done':isNext?'next':'future';
+    const badge  = done
+      ? `<span class="city-badge done">✓ Visitada</span>`
+      : isNext
+        ? `<span class="city-badge next">🎯 Siguiente · ${kmToNext.toLocaleString()} km</span>`
+        : '';
+    const kmVal  = done
+      ? `<div class="city-km-val" style="color:var(--green)">${city.km.toLocaleString()}</div><div class="city-km-lbl">km</div>`
+      : isNext
+        ? `<div class="city-km-val" style="color:var(--ac)">${city.km.toLocaleString()}</div><div class="city-km-lbl">km desde inicio</div>`
+        : `<div class="city-km-val">${city.km.toLocaleString()}</div><div class="city-km-lbl">km desde inicio</div>`;
+    return `<div class="city-row ${cls}">
+      <div class="city-flag">${city.flag}</div>
+      <div class="city-info">
+        <div class="city-name">${city.n}${done?' ✓':isNext?' ←':''}</div>
+        <div class="city-desc">${city.desc}</div>
+      </div>
+      <div class="city-km">${kmVal}</div>
+      ${badge}
+    </div>`;
+  }).join('');
 }
 </script>
 {% endif %}
